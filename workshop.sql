@@ -29,8 +29,11 @@ CREATE TABLE healthcheck_data (
 
 -- Insert customers
 INSERT INTO monitors (monitor_id, name, url, interval, created_at, expected_response, last_checked) VALUES
-    (DEFAULT, 'chillbros', 'http://chillbros.net', 60, CURRENT_TIMESTAMP, '200', null),
-   (DEFAULT, 'minecraft', 'http://minecraft.chillbros.net', 60, CURRENT_TIMESTAMP, '200', null);
+    (DEFAULT, 'Plex', 'http://172.16.20.40:32400/identity', 60, CURRENT_TIMESTAMP, '200', null),
+    (DEFAULT, 'Proxmox', 'https://172.16.20.35:8006/#v1:0:=node%2Feevee:4:5::::::', 90, CURRENT_TIMESTAMP, '200', null),
+    (DEFAULT, 'Switch', 'http://172.16.20.254/csdaffe074/config/log_off_page.htm', 15, CURRENT_TIMESTAMP, '200', null),
+    (DEFAULT, 'Router', 'https://172.16.255.250/', 15, CURRENT_TIMESTAMP, '200', null);
+
 
 -- Insert orders
 INSERT INTO healthcheck_data (datapoint_id, healthcheck_timestamp, monitor_id, response, response_time) VALUES
