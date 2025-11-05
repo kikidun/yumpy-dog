@@ -23,38 +23,48 @@ def getMonitors():
 
     return monitors
 
-#HTTP get of a given URL, return response
-#todo: use the timestamp too
+#HTTP get of a given URL, return response and timestamp
 def checkURL(URL):
     print("Sending request to "+URL)
     send_timestamp = datetime.now()
     resp = requests.get(URL, verify=False)
 
-    return resp   
+    return resp, send_timestamp   
 
-#put the result of the health check back in the db
-#todo: make this work
-def update_DB(monitor_name, health_check_result):
-    #this will parse the result and put it in the db
-    print("Loading the database with a "+ str(health_check_result) +" for "+ monitor_name)
+#put the result of the health check in the db, update last checked
+def update_DB(monitor, health_check_result, send_time):
+    print("Loading the database with a "+ str(health_check_result) +" for "+ monitor[1])
+    try:
+        cur.execute("INSERT INTO healthcheck_data ( healthcheck_timestamp, monitor_id, response, response_time) VALUES (%s, %s, %s, %s)",
+        (send_time, monitor[0], health_check_result.status_code, health_check_result.elapsed))
+        cur.execute("UPDATE monitors SET last_checked =%s WHERE monitor_id = %s",(send_time, monitor[0]))
+        conn.commit()
+        print("Commit successful!")
+    except Exception as e:
+        conn.rollback()  # Undo all changes in this transaction
+        print("Commit failed!")
+        print(f"Error: {e}")
     return True
 
-#
+#for every entry in monitors, check the url, and put the result in the db
 def working_logic(monitors):
     print("printing monitors")
     for row in monitors:
         print(row[1])
     print("")
     for monitor in monitors:
-        hc_result = checkURL(monitor[2])
-        print(hc_result.status_code)
-        db_resp = update_DB(monitor[1], hc_result.status_code)
+        health_check_result, send_time = checkURL(monitor[2])
+        print(health_check_result.status_code)
+        db_resp = update_DB(monitor, health_check_result, send_time)
+        #print("db response:")
+        #print(db_resp)
 
 
 monitors = getMonitors()
 working_logic(monitors)
 
-
+cur.close()
+conn.close()
 
 # Insert data
 #cur.execute(
