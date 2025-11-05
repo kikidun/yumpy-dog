@@ -52,4 +52,8 @@ INSERT INTO healthcheck_data (datapoint_id, healthcheck_timestamp, monitor_id, r
 --SELECT c.name FROM customers c
 --JOIN orders o ON c.customer_id = o.customer_id
 --WHERE o.product_name = "Laptop";
-                             
+
+
+-- INSERT INTO config (key, value) VALUES ('worker_enabled', 'True') ON CONFLICT (key) DO NOTHING;
+
+-- UPDATE config SET value = 'False', updated_at = CURRENT_TIMESTAMP WHERE key = 'worker_enabled';

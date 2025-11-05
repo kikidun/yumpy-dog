@@ -1,5 +1,6 @@
 import psycopg2
 import requests
+import time
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -10,9 +11,26 @@ conn = psycopg2.connect(
     password="pwtest"
 )
 
-
 cur = conn.cursor()
 print("connected to DB")
+
+def getConfig():
+    query = "SELECT * FROM config"
+    cur.execute(query)
+    config = cur.fetchall()
+    return config
+
+config = getConfig()
+
+#print out the config, gotta set these better somehow
+print("printing configuration:")
+for key in config:
+    print(key[0] + ": " + key[1])
+
+
+test = getConfig()[0][1]
+print("test")
+print(test)
 
 #Retrieves the entire monitor table to get urls from. 
 #todo: look at refining
@@ -46,18 +64,40 @@ def update_DB(monitor, health_check_result, send_time):
         print(f"Error: {e}")
     return True
 
+
+
+
+
+#every X number of seconds, query the monitor table for entries where last checked + interval is less than now
+#check those monitors
+
 #for every entry in monitors, check the url, and put the result in the db
+#todo: the loop isn't quite working, its going too fast
+
 def working_logic(monitors):
-    print("printing monitors")
-    for row in monitors:
-        print(row[1])
-    print("")
-    for monitor in monitors:
-        health_check_result, send_time = checkURL(monitor[2])
-        print(health_check_result.status_code)
-        db_resp = update_DB(monitor, health_check_result, send_time)
-        #print("db response:")
-        #print(db_resp)
+    #if worker_enabled true
+    enabled = config[0][1] 
+    while True:
+        enabled = getConfig()[0][1]
+        print(str(datetime.now())+" LOG: enabled is set to " + enabled)
+        if enabled:
+            print(str(datetime.now())+" printing monitors")
+            for row in monitors:
+                print(row[1])
+            print("")
+            for monitor in monitors:
+                health_check_result, send_time = checkURL(monitor[2])
+                print(health_check_result.status_code)
+                db_resp = update_DB(monitor, health_check_result, send_time)
+            print(str(datetime.now())+" LOG: Setting 'enabled' to : "+ str(getConfig()[0][1]))    
+            time.sleep(10)
+        else:
+            print(str(datetime.now())+" LOG: because enabled is set to " + enabled + ", Sleep for 30s")
+            time.sleep(10)
+
+
+
+
 
 
 monitors = getMonitors()
