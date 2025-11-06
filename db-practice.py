@@ -2,7 +2,7 @@ import psycopg2
 import requests
 import time
 from datetime import datetime
-from dotenv import load_dotenv
+
 
 conn = psycopg2.connect(
     host="localhost",
@@ -41,6 +41,13 @@ def getMonitors():
 
     return monitors
 
+#query the monitor table for entries where last checked + interval is less than now
+def getMonitorsForChecking():
+    query = "SELECT * FROM monitors WHERE last_checked + (interval * INTERVAL '1 second') < CURRENT_TIMESTAMP;"
+    cur.execute(query)
+    monitors = cur.fetchall()
+
+    return monitors
 #HTTP get of a given URL, return response and timestamp
 def checkURL(URL):
     print("Sending request to "+URL)
@@ -80,11 +87,11 @@ def working_logic(monitors):
     while True:
         enabled = getConfig()[0][1]
         print(str(datetime.now())+" LOG: enabled is set to " + enabled)
-        if enabled:
-            print(str(datetime.now())+" printing monitors")
-            for row in monitors:
-                print(row[1])
-            print("")
+        if enabled.strip() == "True":
+            #print(str(datetime.now())+" printing monitors")
+           # for row in monitors:
+                #print(row[1])
+            #print("")
             for monitor in monitors:
                 health_check_result, send_time = checkURL(monitor[2])
                 print(health_check_result.status_code)
@@ -92,7 +99,7 @@ def working_logic(monitors):
             print(str(datetime.now())+" LOG: Setting 'enabled' to : "+ str(getConfig()[0][1]))    
             time.sleep(10)
         else:
-            print(str(datetime.now())+" LOG: because enabled is set to " + enabled + ", Sleep for 30s")
+            print(str(datetime.now())+" LOG: because enabled is set to " + enabled + ", Sleep for 10s")
             time.sleep(10)
 
 
