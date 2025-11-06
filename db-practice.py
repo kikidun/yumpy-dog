@@ -44,7 +44,7 @@ def getMonitorsForChecking():
     cur = conn.cursor()
     cur.execute("SELECT * FROM monitors m WHERE m.last_checked + (m.interval * INTERVAL '1 second') < CURRENT_TIMESTAMP")
     monitorsForChecking = cur.fetchall()
-    print("monitors for checking: "+ str(monitorsForChecking))
+    #print("monitors for checking: "+ str(monitorsForChecking))
     cur.close()
     return monitorsForChecking
 
@@ -83,17 +83,17 @@ def working_logic():
             monitors = getMonitorsForChecking()
             #print(monitors)
             if len(monitors) == 0:
-                time.sleep(10)
+                time.sleep(1)
             else:
                 for monitor in monitors:
                     health_check_result, send_time = checkURL(monitor[2])
                     #print(health_check_result.status_code)
                     update_DB(monitor, health_check_result, send_time)
             #print(str(datetime.now())+" LOG: Setting 'enabled' to : "+ str(getConfig()[0][1]))    
-                time.sleep(10)
+                time.sleep(1)
         else:
             #print(str(datetime.now())+" LOG: because enabled is set to " + enabled + ", Sleep for 10s")
-            time.sleep(10)
+            time.sleep(1)
 
 
 working_logic()
