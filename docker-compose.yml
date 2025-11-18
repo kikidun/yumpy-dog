@@ -1,10 +1,21 @@
 
 services:
   app:
+    build: ./app
+    depends_on: [db]  
+    container_name: yump_app
+    restart: unless-stopped
+  
+    env_file:
+        - ./app/.env  
+    ports:
+        - "5100:5100"
+
+  worker:
     build: ./worker
     image: yumpy-dog 
     depends_on: [db]  
-    container_name: yump_app
+    container_name: yump_worker
     restart: unless-stopped
 
     #environment:
@@ -14,7 +25,7 @@ services:
     env_file:
       - ./worker/.env  
     ports:
-      - "5000:5000"
+      - "5200:5200"
   
   db:
     build: ./database
