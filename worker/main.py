@@ -27,7 +27,7 @@ def connectDB():
                 )
                 print(str(datetime.now()) + "connected to DB")
                 return _conn
-            except Exception as e:# Undo all changes in this transaction
+            except Exception as e:
                 if attempt < max_retries - 1:
                     print(f"Connection failed, retrying... ({attempt + 1}/{max_retries})")
                     time.sleep(2 ** attempt)  # Exponential backoff
