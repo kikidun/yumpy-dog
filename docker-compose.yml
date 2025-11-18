@@ -1,34 +1,36 @@
 
 services:
   app:
-    build: .
+    build: ./app
     image: yumpy-dog 
     depends_on: [db]  
     container_name: yump_app
     restart: unless-stopped
 
-    environment:
-      POSTGRES_USER: yumpy
-      POSTGRES_DB: yump_db
+    #environment:
+      #POSTGRES_USER: yumpy
+      #POSTGRES_DB: yump_db
 
     env_file:
-      - .env  
+      - ./app/.env  
     ports:
       - "5000:5000"
   
   db:
-    build: ../yumpy-store
+    build: ./database
     #image: postgres:17.6  # Use official image
     container_name: yumpy_postgres
     restart: unless-stopped
 
-    environment:
-      POSTGRES_USER: yumpy
-      POSTGRES_PASSWORD: ${DB_PASSWORD}  # Use env var
-      POSTGRES_DB: yump_db
+    env_file:
+      - ./database/.env  
+    #environment:
+      #POSTGRES_USER: yumpy
+      #POSTGRES_PASSWORD: ${DB_PASSWORD}  # Use env var
+      #POSTGRES_DB: yump_db
     volumes:
       - postgres_data:/home/wheels/postgresql/data
-      - ../yumpy-store/init-scripts:/docker-entrypoint-initdb.d:ro
+      - ./database/init-scripts:/docker-entrypoint-initdb.d:ro
 
       
     ports:

@@ -5,3 +5,10 @@ venv/
 .DS_Store
 .env
 workshop.sql
+*-dump.sql
+*11-6-218pm-dump.sql
+*.sql.bak
+*.pem
+*.key
+*.log
+logs/
