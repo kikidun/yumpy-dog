@@ -2,19 +2,43 @@ import psycopg2
 import requests
 import time
 from datetime import datetime
+import warnings
+warnings.filterwarnings("ignore")
+
+import os
+from dotenv import load_dotenv
 
 
-conn = psycopg2.connect(
-    host="localhost",
-    dbname="postgres",
-    user="postgres",
-    password="pwtest"
-)
+load_dotenv()
 
+_conn = None
 
-print("connected to DB")
+def connectDB():
+    global _conn
+    if _conn is None or _conn.closed:
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                _conn = psycopg2.connect(
+                    host=os.getenv("PG_HOST", "db"),
+                    dbname=os.getenv("PG_DATABASE", "yump_db"),
+                    user=os.getenv("PG_USER", "yumpy"),
+                    password=os.getenv("DB_PASSWORD")
+                )
+                print(str(datetime.now()) + "connected to DB")
+                return _conn
+            except Exception as e:# Undo all changes in this transaction
+                if attempt < max_retries - 1:
+                    print(f"Connection failed, retrying... ({attempt + 1}/{max_retries})")
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                else:
+                    print("Connection failed!")
+                    print(f"Error: {e}")
+                    exit()
+    return _conn
 
 def getConfig():
+    conn = connectDB()
     cur = conn.cursor()
     query = "SELECT * FROM config"
     cur.execute(query)
@@ -22,6 +46,7 @@ def getConfig():
     cur.close()
     return config
 
+#need to make this a fine chill thing to do and not exit worthy
 config = getConfig()
 
 #print out the config, gotta set these better somehow
@@ -31,6 +56,7 @@ for key in config:
 
 #Retrieves the entire monitor table to get urls from. 
 def getMonitors():
+    conn = connectDB()
     cur = conn.cursor()
     query = "SELECT * FROM monitors"
     cur.execute(query)
@@ -40,9 +66,10 @@ def getMonitors():
 
 #query the monitor table for entries where last checked + interval is less than now
 def getMonitorsForChecking():
+    conn = connectDB()
     conn.commit()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM monitors m WHERE m.last_checked + (m.interval * INTERVAL '1 second') < CURRENT_TIMESTAMP")
+    cur.execute("SELECT * FROM monitors WHERE last_checked IS NULL OR (last_checked + (interval * INTERVAL '1 second') < CURRENT_TIMESTAMP)")
     monitorsForChecking = cur.fetchall()
     #print("monitors for checking: "+ str(monitorsForChecking))
     cur.close()
@@ -58,8 +85,9 @@ def checkURL(URL):
 
 #put the result of the health check in the db, update last checked
 def update_DB(monitor, health_check_result, send_time):
+    conn = connectDB()
     cur = conn.cursor()
-    print("Loading the database with a "+ str(health_check_result) +" for "+ monitor[1])
+    print(str(datetime.now()) + " Loading the database with a "+ str(health_check_result) +" for "+ monitor[1])
     try:
         cur.execute("INSERT INTO healthcheck_data ( healthcheck_timestamp, monitor_id, response, response_time) VALUES (%s, %s, %s, %s)",
         (send_time, monitor[0], health_check_result.status_code, health_check_result.elapsed))
@@ -75,6 +103,7 @@ def update_DB(monitor, health_check_result, send_time):
 
 
 def working_logic():
+    conn = connectDB()
     while True:
         conn.commit()
         enabled = getConfig()[0][1]
@@ -98,4 +127,4 @@ def working_logic():
 
 working_logic()
 
-conn.close()
+_conn.close()
