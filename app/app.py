@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import psycopg2
 import os
 import time
@@ -47,24 +47,70 @@ def getStatus():
 def getMonitors():
     return True
 
+#GET config or PUT/POST
 @app.route('/config')
-def getConfig():
+def config():
     conn = connectDB()
     print("connected db")
     cur = conn.cursor()
     print("cursor created")
-    query = "SELECT * FROM config"
-    cur.execute(query)
-    print("query executed")
-    config = cur.fetchall()
-    print("results fetched")
-    cur.close()
+    if request.method == 'GET':
+        query = "SELECT * FROM config"
+        cur.execute(query)
+        print("query executed")
+        config = cur.fetchall()
+        print("results fetched")
+        cur.close()
+    elif request.method == 'PUT':
+        return "Add?"
+    elif request.method == 'POST':
+        return "Update?"
     return config
 
-config = getConfig()
-print("printing configuration:")
-for key in config:
-    print(key[0] + ": " + key[1])
-    
+#GET
+@app.route('/data')
+def getData():
+    monitor, number = request.args.get('monitor'), request.args.get('number')
+    conn = connectDB()
+    print("data connected db")
+    cur = conn.cursor()
+    print("data cursor created")
+    query = """
+        SELECT * FROM healthcheck_data 
+        WHERE monitor_id = %s 
+        ORDER BY healthcheck_timestamp DESC 
+        LIMIT %s
+    """
+    data = cur.execute(query, (monitor, number))
+    print("data query executed")
+    data = cur.fetchall()
+   
+    result = []
+    #print(str(data))
+    for row in data:
+        result.append({
+            "id": row[0],
+            "timestamp": str(row[1]) if row[1] else None,
+            "monitor_id": row[2],
+            "response": row[3],
+            "response_time": str(row[4]) if row[4] else None  # Convert timedelta to string
+        })
+        print(jsonify(result))
+    return jsonify(result)
+
+
+def queryDB(query):
+    conn = connectDB()
+    print("qdb connected db")
+    cur = conn.cursor()
+    print("qdb cursor created")
+    cur.execute(query)
+    print("qdb query executed")
+    data = cur.fetchall()
+    print("qdb results fetched")
+    cur.close()
+    return data
+
+
 if __name__ == "__main__":
-    app.run(debug=True,host='0.0.0.0')
+    app.run(debug=True,host='0.0.0.0', port=5100)

@@ -79,8 +79,11 @@ def getMonitorsForChecking():
 def checkURL(URL):
     #print("Sending request to "+URL)
     send_timestamp = datetime.now()
-    resp = requests.get(URL, verify=False)
-
+    try:
+        resp = requests.get(URL, verify=False)
+    except Exception as e:
+        print("Error checking URL")
+        print(f"Error: {e}")
     return resp, send_timestamp   
 
 #put the result of the health check in the db, update last checked
