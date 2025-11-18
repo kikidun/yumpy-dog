@@ -1,7 +1,7 @@
 
 services:
   app:
-    build: ./app
+    build: ./worker
     image: yumpy-dog 
     depends_on: [db]  
     container_name: yump_app
@@ -12,7 +12,7 @@ services:
       #POSTGRES_DB: yump_db
 
     env_file:
-      - ./app/.env  
+      - ./worker/.env  
     ports:
       - "5000:5000"
   
