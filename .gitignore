@@ -5,6 +5,7 @@ venv/
 .DS_Store
 .env
 workshop.sql
+workshop
 *-dump.sql
 *11-6-218pm-dump.sql
 *.sql.bak

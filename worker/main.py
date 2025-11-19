@@ -125,7 +125,7 @@ def working_logic():
                 time.sleep(1)
         else:
             #print(str(datetime.now())+" LOG: because enabled is set to " + enabled + ", Sleep for 10s")
-            time.sleep(1)
+            time.sleep(10)
 
 
 working_logic()

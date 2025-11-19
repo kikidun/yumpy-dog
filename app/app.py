@@ -1,7 +1,9 @@
+import datetime
 from flask import Flask, jsonify, request
 import psycopg2
 import os
 import time
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -48,7 +50,8 @@ def getMonitors():
     return True
 
 #GET config or PUT/POST
-@app.route('/config')
+#add sanitization, 
+@app.route('/config', methods=['POST', 'GET'])
 def config():
     conn = connectDB()
     print("connected db")
@@ -64,13 +67,39 @@ def config():
     elif request.method == 'PUT':
         return "Add?"
     elif request.method == 'POST':
-        return "Update?"
+        data = request.get_json()
+        if not data or 'key' not in data or 'value' not in data:
+            return jsonify({"error": "key and value are required"}), 400
+        key = data['key']
+        value = data['value']
+        try:
+            query = """
+                    UPDATE config 
+                    SET value = %s, updated_at = %s 
+                    WHERE key = %s
+                """
+            cur.execute(query, (value, datetime.now(), key))
+            conn.commit()
+            if cur.rowcount == 0:
+                    return jsonify({"error": f"Config key '{key}' not found. Use PUT to create new."}), 404
+            conn.commit()
+            cur.close()
+            return jsonify({"success": True, "key": key, "value": value}), 200
+        except Exception as e:
+            conn.rollback()  # Rollback on error
+            cur.close()
+            return jsonify({"error": str(e)}), 500
     return config
 
-#GET
+#TODO
+#Multiple Monitors, timeframe, sanitizing variables
 @app.route('/data')
 def getData():
-    monitor, number = request.args.get('monitor'), request.args.get('number')
+    data = request.get_json()
+    if not data or 'monitor' not in data or 'number' not in data:
+        return jsonify({"error": "monitor and number are required"}), 400
+    monitor = data['monitor']
+    number = data['number']
     conn = connectDB()
     print("data connected db")
     cur = conn.cursor()
@@ -99,12 +128,12 @@ def getData():
     return jsonify(result)
 
 
-def queryDB(query):
+def queryDB(query, params):
     conn = connectDB()
     print("qdb connected db")
     cur = conn.cursor()
     print("qdb cursor created")
-    cur.execute(query)
+    cur.execute(query(params))
     print("qdb query executed")
     data = cur.fetchall()
     print("qdb results fetched")
