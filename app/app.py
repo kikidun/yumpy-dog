@@ -100,6 +100,7 @@ def getData():
         return jsonify({"error": "monitor and number are required"}), 400
     monitor = data['monitor']
     number = data['number']
+    
     conn = connectDB()
     print("data connected db")
     cur = conn.cursor()
@@ -116,6 +117,7 @@ def getData():
    
     result = []
     #print(str(data))
+    
     for row in data:
         result.append({
             "id": row[0],
