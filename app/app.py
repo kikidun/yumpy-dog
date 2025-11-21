@@ -45,8 +45,50 @@ def hello():
 def getStatus():
     return True
 
-@app.route('/monitors')
+@app.route('/monitors', methods=['POST', 'GET'])
 def getMonitors():
+    conn = connectDB()
+    print("connected db")
+    cur = conn.cursor()
+    print("cursor created")
+    if request.method == 'GET':
+        query = "SELECT * FROM monitors"
+        cur.execute(query)
+        print("query executed")
+        config = cur.fetchall()
+        print("results fetched")
+        cur.close()
+    elif request.method == 'POST':
+        data = request.get_json()
+        #name, url, interval, expected response
+        if not data or 'name' not in data or 'url' not in data or 'interval' not in data or 'expected_response' not in data:
+            return jsonify({"error": "name, url, interval and value are required"}), 400
+        name = data['name']
+        url = data['url']
+        interval = data['interval']
+        expected_response = data['expected_response']
+        try:
+            query = """
+                    INSERT INTO monitors 
+                    (name, url, interval, expected_response) VALUES (%s, %s, %s, %s)
+                    RETURNING monitor_id
+                """
+            cur.execute(query, (name, url, interval, expected_response))
+            result = cur.fetchone()
+            monitor_id = result[0] if result else None
+            conn.commit()
+
+            if monitor_id:
+                cur.close()
+                return jsonify({"success": True, "monitor_id": monitor_id, "message": "Monitor created successfully"}), 200
+            else:
+                cur.close()
+                return jsonify({"error": f"Failed to add monitor"}), 404
+        except Exception as e:
+            conn.rollback()  # Rollback on error
+            cur.close()
+            return jsonify({"error": str(e)}), 500
+    return config
     return True
 
 #GET config or PUT/POST
@@ -64,8 +106,6 @@ def config():
         config = cur.fetchall()
         print("results fetched")
         cur.close()
-    elif request.method == 'PUT':
-        return "Add?"
     elif request.method == 'POST':
         data = request.get_json()
         if not data or 'key' not in data or 'value' not in data:
