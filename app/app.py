@@ -5,8 +5,50 @@ import os
 import time
 from datetime import datetime
 from dotenv import load_dotenv
+import logging.config
+import pathlib
+import json 
+
+logger = logging.getLogger("app")
+
+logging_config = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "simple": {
+            "format": "%(levelname)s: %(message)s"
+        },
+        "timestamped": {
+            "format": "%(levelname)s %(asctime)s: %(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z"
+        }
+    },
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "formatter": "timestamped",
+            "stream": "ext://sys.stdout"
+        }
+    },
+    "loggers": {
+        "root": {
+            "level": "DEBUG",
+            "handlers": [
+                "stdout"
+            ]
+        }
+    }
+}
+#keeping inline logger config for now
+def configLogging():
+#    config_file = pathlib.Path("config.json")
+#    with open(config_file) as f_in:
+#        config = json.load(f_in)
+    logging.config.dictConfig(logging_config)
+
 
 load_dotenv()
+
 
 app = Flask(__name__)
 
@@ -24,15 +66,15 @@ def connectDB():
                     user=os.getenv("PG_USER", "yumpy"),
                     password=os.getenv("DB_PASSWORD")
                 )
-                print("Connected!")
+                logger.info("Connected!")
                 return _conn
             except Exception as e:
                 if attempt < max_retries - 1:
-                    print(f"Connection failed, retrying... ({attempt + 1}/{max_retries})")
+                    logger.warning(f"Connection failed, retrying... ({attempt + 1}/{max_retries})")
                     time.sleep(2 ** attempt)  # Exponential backoff
                 else:
-                    print("Connection failed!")
-                    print(f"Error: {e}")
+                    logger.error("Connection failed!")
+                    logger.error(f"Error: {e}")
                     exit()
     return _conn
 
@@ -48,15 +90,15 @@ def getStatus():
 @app.route('/monitors', methods=['POST', 'GET'])
 def getMonitors():
     conn = connectDB()
-    print("connected db")
+    logger.debug("connected db")
     cur = conn.cursor()
-    print("cursor created")
+    logger.debug("cursor created")
     if request.method == 'GET':
         query = "SELECT * FROM monitors"
         cur.execute(query)
-        print("query executed")
+        logger.debug("query executed")
         config = cur.fetchall()
-        print("results fetched")
+        logger.debug("results fetched")
         cur.close()
     elif request.method == 'POST':
         data = request.get_json()
@@ -89,26 +131,25 @@ def getMonitors():
             cur.close()
             return jsonify({"error": str(e)}), 500
     return config
-    return True
 
 #GET config or PUT/POST
-#add sanitization, 
 @app.route('/config', methods=['POST', 'GET'])
 def config():
     conn = connectDB()
-    print("connected db")
+    logger.debug("connected db")
     cur = conn.cursor()
-    print("cursor created")
+    logger.debug("cursor created")
     if request.method == 'GET':
         query = "SELECT * FROM config"
         cur.execute(query)
-        print("query executed")
+        logger.debug("query executed")
         config = cur.fetchall()
-        print("results fetched")
+        logger.debug("results fetched")
         cur.close()
     elif request.method == 'POST':
         data = request.get_json()
         if not data or 'key' not in data or 'value' not in data:
+            logger.error("error: key and value are required")
             return jsonify({"error": "key and value are required"}), 400
         key = data['key']
         value = data['value']
@@ -121,7 +162,9 @@ def config():
             cur.execute(query, (value, datetime.now(), key))
             conn.commit()
             if cur.rowcount == 0:
-                    return jsonify({"error": f"Config key '{key}' not found. Use PUT to create new."}), 404
+                error_message = jsonify({"error": f"Config key '{key}' not found. Use PUT to create new."})
+                logger.error(error_message)
+                return error_message, 404
             conn.commit()
             cur.close()
             return jsonify({"success": True, "key": key, "value": value}), 200
@@ -137,14 +180,15 @@ def config():
 def getData():
     data = request.get_json()
     if not data or 'monitor' not in data or 'number' not in data:
+        logger.error("monitor and number are required")
         return jsonify({"error": "monitor and number are required"}), 400
     monitor = data['monitor']
     number = data['number']
-    
+
     conn = connectDB()
-    print("data connected db")
+    logger.debug("data connected db")
     cur = conn.cursor()
-    print("data cursor created")
+    logger.debug("data cursor created")
     query = """
         SELECT * FROM healthcheck_data 
         WHERE monitor_id = %s 
@@ -152,11 +196,12 @@ def getData():
         LIMIT %s
     """
     data = cur.execute(query, (monitor, number))
-    print("data query executed")
+    logger.debug("data query executed")
     data = cur.fetchall()
    
     result = []
-    #print(str(data))
+    logger.debug("printing healthcheck data")
+    logger.debug(str(data))
     
     for row in data:
         result.append({
@@ -166,22 +211,26 @@ def getData():
             "response": row[3],
             "response_time": str(row[4]) if row[4] else None  # Convert timedelta to string
         })
-        print(jsonify(result))
+        logger.debug(jsonify(result))
     return jsonify(result)
 
 
 def queryDB(query, params):
     conn = connectDB()
-    print("qdb connected db")
+    logger.debug("qdb connected db")
     cur = conn.cursor()
-    print("qdb cursor created")
+    logger.debug("qdb cursor created")
     cur.execute(query(params))
-    print("qdb query executed")
+    logger.debug("qdb query executed")
     data = cur.fetchall()
-    print("qdb results fetched")
+    logger.debug("qdb results fetched")
     cur.close()
     return data
 
+def main():
+    configLogging()
+    app.run(debug=True,host='0.0.0.0', port=5100)
+
 
 if __name__ == "__main__":
-    app.run(debug=True,host='0.0.0.0', port=5100)
+    main()

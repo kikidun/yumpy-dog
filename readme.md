@@ -1,0 +1,1 @@
+A hybrid refresher/exploratory project to build a small application, containerize it, automate its deployment, make it observable, and make it resilient.

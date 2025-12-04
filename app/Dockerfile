@@ -6,7 +6,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 #Stage 2
 #FROM python:3.11-slim
-WORKDIR /app
 #COPY --from=builder /root/.local /root/.local
 COPY ./ ./app/
 ENV PATH=/root/.local/bin:$PATH

@@ -13,3 +13,4 @@ workshop
 *.key
 *.log
 logs/
+config.json
