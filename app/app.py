@@ -87,8 +87,11 @@ def hello():
 def getStatus():
     return True
 
-@app.route('/monitors', methods=['POST', 'GET'])
+@app.route('/monitors', methods=['POST', 'GET', 'PUT'])
 def getMonitors():
+    logger.debug(f"Route hit with URL: {request.url}")
+    logger.debug(f"Request method: {request.method}")
+    logger.debug(f"Body received: {request.json}")
     conn = connectDB()
     logger.debug("connected db")
     cur = conn.cursor()
@@ -130,6 +133,58 @@ def getMonitors():
             conn.rollback()  # Rollback on error
             cur.close()
             return jsonify({"error": str(e)}), 500
+    elif request.method == 'PUT':
+        data = request.get_json()
+        #PUT is gonna require an ID, and a param.
+        #I guess with an id, it can have any of interval, name, url, or expected response.
+        if not data or 'name' not in data or 'url' not in data or 'interval' not in data or 'expected_response' not in data or 'monitor_id' not in data:
+            logger.error("monitor_id, name, url, interval and value are required")
+            return jsonify({"error": "monitor_id, name, url, interval and expected_response are required"}), 400
+        name = data['name']
+        url = data['url']
+        interval = data['interval']
+        monitor_id = data['monitor_id']
+        expected_response = data['expected_response']
+        try:
+            query = """
+                    UPDATE monitors 
+                    SET name = %s, url = %s, interval = %s, expected_response = %s
+                    WHERE monitor_id = %s
+                    RETURNING monitor_id, name, url, interval, expected_response, last_checked
+                    """
+            cur.execute(query, (name, url, interval, expected_response, monitor_id))
+            logger.debug("query executed")
+            conn.commit()
+            logger.debug("query committed")
+            result = cur.fetchone()
+            logger.debug("result fetched")
+            
+            conn.commit()
+
+            if result:
+                cur.close()
+                return jsonify({
+                    "success": True, 
+                    "monitor_id": result[0], 
+                    "name": result[1], 
+                    "url": result[2], 
+                    "interval": result[3], 
+                    "expected_response": result[4],
+                    "last_checked": str(result[5]) if result[5] else None,
+                    "message": "Monitor updated successfully"
+                }), 200                #error_message = jsonify({"error": f"Config key '{key}' not found. Use PUT to create new."})
+                #logger.error(error_message)
+                #return error_message, 404
+                return jsonify({"error": f"Failed to update monitor"}), 404
+            else:
+                cur.close()
+                return jsonify({"error": f"Failed to update monitor"}), 404
+        except Exception as e:
+            conn.rollback()  # Rollback on error
+            cur.close()
+            return jsonify({"error": str(e)}), 500
+
+        return jsonify(),200   
     return config
 
 #GET config or PUT/POST
@@ -165,7 +220,6 @@ def config():
                 error_message = jsonify({"error": f"Config key '{key}' not found. Use PUT to create new."})
                 logger.error(error_message)
                 return error_message, 404
-            conn.commit()
             cur.close()
             return jsonify({"success": True, "key": key, "value": value}), 200
         except Exception as e:
@@ -211,21 +265,21 @@ def getData():
             "response": row[3],
             "response_time": str(row[4]) if row[4] else None  # Convert timedelta to string
         })
-        logger.debug(jsonify(result))
+        logger.debug(f"Result: {result}")
     return jsonify(result)
 
 
-def queryDB(query, params):
-    conn = connectDB()
-    logger.debug("qdb connected db")
-    cur = conn.cursor()
-    logger.debug("qdb cursor created")
-    cur.execute(query(params))
-    logger.debug("qdb query executed")
-    data = cur.fetchall()
-    logger.debug("qdb results fetched")
-    cur.close()
-    return data
+#def queryDB(query, params):
+#    conn = connectDB()
+#    logger.debug("qdb connected db")
+#    cur = conn.cursor()
+#    logger.debug("qdb cursor created")
+#    cur.execute(query(params))
+#    logger.debug("qdb query executed")
+#    data = cur.fetchall()
+#    logger.debug("qdb results fetched")
+#    cur.close()
+#    return data
 
 def main():
     configLogging()
