@@ -87,7 +87,7 @@ def hello():
 def getStatus():
     return True
 
-@app.route('/monitors', methods=['POST', 'GET', 'PUT'])
+@app.route('/monitors', methods=['POST', 'GET', 'PUT', 'DELETE'])
 def getMonitors():
     logger.debug(f"Route hit with URL: {request.url}")
     logger.debug(f"Request method: {request.method}")
@@ -103,6 +103,7 @@ def getMonitors():
         config = cur.fetchall()
         logger.debug("results fetched")
         cur.close()
+
     elif request.method == 'POST':
         data = request.get_json()
         #name, url, interval, expected response
@@ -119,9 +120,13 @@ def getMonitors():
                     RETURNING monitor_id
                 """
             cur.execute(query, (name, url, interval, expected_response))
-            result = cur.fetchone()
-            monitor_id = result[0] if result else None
+            logger.debug("create query executed")
             conn.commit()
+            logger.debug("create query committed")
+            result = cur.fetchone()
+            logger.debug("create query fetched")
+            monitor_id = result[0] if result else None
+            
 
             if monitor_id:
                 cur.close()
@@ -132,11 +137,10 @@ def getMonitors():
         except Exception as e:
             conn.rollback()  # Rollback on error
             cur.close()
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"POST error": str(e)}), 500
+
     elif request.method == 'PUT':
         data = request.get_json()
-        #PUT is gonna require an ID, and a param.
-        #I guess with an id, it can have any of interval, name, url, or expected response.
         if not data or 'name' not in data or 'url' not in data or 'interval' not in data or 'expected_response' not in data or 'monitor_id' not in data:
             logger.error("monitor_id, name, url, interval and value are required")
             return jsonify({"error": "monitor_id, name, url, interval and expected_response are required"}), 400
@@ -153,13 +157,11 @@ def getMonitors():
                     RETURNING monitor_id, name, url, interval, expected_response, last_checked
                     """
             cur.execute(query, (name, url, interval, expected_response, monitor_id))
-            logger.debug("query executed")
+            logger.debug("update query executed")
             conn.commit()
-            logger.debug("query committed")
+            logger.debug("update query committed")
             result = cur.fetchone()
-            logger.debug("result fetched")
-            
-            conn.commit()
+            logger.debug("update result fetched")
 
             if result:
                 cur.close()
@@ -182,9 +184,49 @@ def getMonitors():
         except Exception as e:
             conn.rollback()  # Rollback on error
             cur.close()
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"PUT error": str(e)}), 500
+    #i
+    elif request.method == 'DELETE':
+        data = request.get_json()
+        if not data or 'monitor_id' not in data:
+            logger.error("monitor_id is required")
+            return jsonify({"error": "monitor_id is required"}), 400
+        monitor_id = data['monitor_id']
+        try:
+            query = """
+                    DELETE FROM monitors
+                    WHERE monitor_id = %s
+                    RETURNING monitor_id, name, url, interval, expected_response, last_checked
+                    """
+            logger.debug("delete query formatted")       
+            cur.execute(query, (monitor_id,))
+            logger.debug("delete query executed")
+            conn.commit()
+            logger.debug("delete query committed")
+            result = cur.fetchone()
+            logger.debug("delete result fetched")
 
-        return jsonify(),200   
+            if result:
+                cur.close()
+                return jsonify({
+                    "success": True, 
+                    "monitor_id": result[0], 
+                    "name": result[1], 
+                    "url": result[2], 
+                    "interval": result[3], 
+                    "expected_response": result[4],
+                    "last_checked": str(result[5]) if result[5] else None,
+                    "message": "Monitor deleted successfully"
+                }), 200
+            else:
+                cur.close()
+                return jsonify({"error": f"Monitor not found"}), 404
+
+
+        except Exception as e:
+            conn.rollback()  # Rollback on error
+            cur.close()
+            return jsonify({"DELETE error": str(e)}), 500
     return config
 
 #GET config or PUT/POST
