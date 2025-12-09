@@ -1,0 +1,23 @@
+{% extends 'index.html' %}
+
+{% block monitor_table %}
+<table>
+    <tr>
+        <th>id</th>
+        <th>name</th>
+        <th>url</th>
+        <th>interval</th>
+        <th>created at</th>
+        <th>expected response</th>
+        <th>last checked</th>
+      </tr>
+    {% for monitor in monitors %}
+    <tr>
+        {% for field in monitor%}
+        <td>{{ field }}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

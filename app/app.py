@@ -1,5 +1,5 @@
 import datetime
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import psycopg2
 import os
 import time
@@ -78,6 +78,22 @@ def connectDB():
                     exit()
     return _conn
 
+def getMonitors():
+    conn = connectDB()
+    logger.debug("getMonitors connection opened")
+    cur = conn.cursor()
+    query = "SELECT * FROM monitors"
+    cur.execute(query)
+    logger.debug("getMonitors query executed")
+    monitors = cur.fetchall()
+    logger.debug("getMonitors results fetched")
+    cur.close()
+    logger.debug("getMonitors connection closed")
+    logger.debug("json monitors:")
+    logger.debug(jsonify(monitors))
+    logger.debug("monitors:")
+    logger.debug(str(monitors))
+    return monitors
 
 @app.route('/')
 def hello():
@@ -87,11 +103,21 @@ def hello():
 def getStatus():
     return True
 
-@app.route('/monitors', methods=['POST', 'GET', 'PUT', 'DELETE'])
+@app.route('/monitors', methods=['GET'])
+def monitors():
+    monitors = getMonitors()
+    logger.debug("json monitors:")
+    logger.debug(jsonify(monitors))
+    logger.debug("monitors:")
+    logger.debug(str(monitors))
+    return render_template("monitors.html", monitors=monitors)
+
+@app.route('/api/v1/monitors', methods=['POST', 'GET', 'PUT', 'DELETE'])
 def getMonitors():
     logger.debug(f"Route hit with URL: {request.url}")
     logger.debug(f"Request method: {request.method}")
-    logger.debug(f"Body received: {request.json}")
+    if request.method in ['POST', 'PUT', 'DELETE']:
+        logger.debug(f"Body received: {request.json}")
     conn = connectDB()
     logger.debug("connected db")
     cur = conn.cursor()
@@ -100,7 +126,7 @@ def getMonitors():
         query = "SELECT * FROM monitors"
         cur.execute(query)
         logger.debug("query executed")
-        config = cur.fetchall()
+        result = cur.fetchall()
         logger.debug("results fetched")
         cur.close()
 
@@ -227,10 +253,10 @@ def getMonitors():
             conn.rollback()  # Rollback on error
             cur.close()
             return jsonify({"DELETE error": str(e)}), 500
-    return config
+    return result
 
 #GET config or PUT/POST
-@app.route('/config', methods=['POST', 'GET'])
+@app.route('/api/v1/config', methods=['POST', 'GET'])
 def config():
     conn = connectDB()
     logger.debug("connected db")
@@ -272,7 +298,7 @@ def config():
 
 #TODO
 #Multiple Monitors, timeframe, sanitizing variables
-@app.route('/data')
+@app.route('/api/v1/data')
 def getData():
     data = request.get_json()
     if not data or 'monitor' not in data or 'number' not in data:
