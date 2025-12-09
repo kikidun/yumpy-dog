@@ -122,6 +122,7 @@ def checkURL(URL):
     except Exception as e:
         logger.error("Error checking URL")
         logger.error(f"Error: {e}")
+        return 0, send_timestamp
     return resp, send_timestamp   
 
 #put the result of the health check in the db, update last checked

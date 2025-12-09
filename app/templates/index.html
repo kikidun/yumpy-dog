@@ -5,7 +5,8 @@
 </head>
 <body>
     <h2>Welcome to Yump</h2>
-    <p>I am gonna put a table below this line</p>
-    {% block monitor_table %} {% endblock %}
+    <a href="{{ url_for('monitors') }}">Monitors</a>
+    <a href="{{ url_for('config') }}">Config</a>
+    {% block content %} {% endblock %}
 </body>
 </html>

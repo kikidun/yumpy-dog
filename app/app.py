@@ -1,5 +1,5 @@
 import datetime
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, redirect
 import psycopg2
 import os
 import time
@@ -52,8 +52,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
+#######################################################
+#Helper functions
+#######################################################
 _conn = None
-
 def connectDB():
     global _conn
     if _conn is None or _conn.closed:
@@ -78,6 +80,15 @@ def connectDB():
                     exit()
     return _conn
 
+def getConfig():
+    conn = connectDB()
+    cur = conn.cursor()
+    query = "SELECT * FROM config"
+    cur.execute(query)
+    config = cur.fetchall()
+    cur.close()
+    return config
+
 def getMonitors():
     conn = connectDB()
     logger.debug("getMonitors connection opened")
@@ -95,9 +106,30 @@ def getMonitors():
     logger.debug(str(monitors))
     return monitors
 
+def getRequestData():
+    """
+    Extract data from request regardless of content type
+    Returns a dictionary
+    """
+    if request.is_json:
+        return request.get_json()
+    elif request.form:
+        # Convert ImmutableMultiDict to regular dict
+        return request.form.to_dict()
+    else:
+        # Try to parse raw data as JSON
+        try:
+            return json.loads(request.data)
+        except:
+            return {}
+
+
+#######################################################
+#Web Routes
+#######################################################
 @app.route('/')
 def hello():
-    return 'Hello, World!'
+    return render_template("index.html")
 
 @app.route('/status')
 def getStatus():
@@ -112,12 +144,27 @@ def monitors():
     logger.debug(str(monitors))
     return render_template("monitors.html", monitors=monitors)
 
+@app.route('/config', methods=['GET'])
+def config():
+    config = getConfig()
+    logger.debug("json config:")
+    logger.debug(jsonify(config))
+    logger.debug("config:")
+    logger.debug(str(config))
+    return render_template("config.html", config=config)
+
+
+#######################################################
+#API Routes
+#######################################################
 @app.route('/api/v1/monitors', methods=['POST', 'GET', 'PUT', 'DELETE'])
 def getMonitors():
     logger.debug(f"Route hit with URL: {request.url}")
     logger.debug(f"Request method: {request.method}")
-    if request.method in ['POST', 'PUT', 'DELETE']:
-        logger.debug(f"Body received: {request.json}")
+    logger.debug(f"Request: {str(request.form)}")
+    #if request.method in ['POST', 'PUT', 'DELETE']:
+        #logger.debug(f"Body received: {request.json}")
+    
     conn = connectDB()
     logger.debug("connected db")
     cur = conn.cursor()
@@ -131,10 +178,11 @@ def getMonitors():
         cur.close()
 
     elif request.method == 'POST':
-        data = request.get_json()
-        #name, url, interval, expected response
+        data = getRequestData()
+        logger.debug(f"POST Request: {data}")
         if not data or 'name' not in data or 'url' not in data or 'interval' not in data or 'expected_response' not in data:
-            return jsonify({"error": "name, url, interval and value are required"}), 400
+            return jsonify({"error": "name, url, interval and expected_response are required"}), 400
+        #validate each of these fields
         name = data['name']
         url = data['url']
         interval = data['interval']
@@ -156,6 +204,8 @@ def getMonitors():
 
             if monitor_id:
                 cur.close()
+                if request.form:
+                    return redirect('/monitors')
                 return jsonify({"success": True, "monitor_id": monitor_id, "message": "Monitor created successfully"}), 200
             else:
                 cur.close()
@@ -166,7 +216,8 @@ def getMonitors():
             return jsonify({"POST error": str(e)}), 500
 
     elif request.method == 'PUT':
-        data = request.get_json()
+        data = getRequestData()
+        logger.debug(f"PUT Request: {data}")
         if not data or 'name' not in data or 'url' not in data or 'interval' not in data or 'expected_response' not in data or 'monitor_id' not in data:
             logger.error("monitor_id, name, url, interval and value are required")
             return jsonify({"error": "monitor_id, name, url, interval and expected_response are required"}), 400
@@ -191,6 +242,8 @@ def getMonitors():
 
             if result:
                 cur.close()
+                if request.form:
+                    return redirect('/monitors')
                 return jsonify({
                     "success": True, 
                     "monitor_id": result[0], 
@@ -213,7 +266,8 @@ def getMonitors():
             return jsonify({"PUT error": str(e)}), 500
     #i
     elif request.method == 'DELETE':
-        data = request.get_json()
+        data = getRequestData()
+        logger.debug(f"DELETE Request: {data}")
         if not data or 'monitor_id' not in data:
             logger.error("monitor_id is required")
             return jsonify({"error": "monitor_id is required"}), 400
@@ -233,6 +287,8 @@ def getMonitors():
             logger.debug("delete result fetched")
 
             if result:
+                if request.form:
+                    return redirect('/monitors')
                 cur.close()
                 return jsonify({
                     "success": True, 
@@ -255,9 +311,71 @@ def getMonitors():
             return jsonify({"DELETE error": str(e)}), 500
     return result
 
+@app.route('/api/v1/monitors/delMon', methods=['POST'])
+def delMon():
+    logger.debug(f"delMon Route hit with URL: {request.url}")
+    logger.debug(f"delMon Request method: {request.method}")
+    logger.debug(f"delMon Request: {str(request.form)}")
+    #if request.method in ['POST', 'PUT', 'DELETE']:
+        #logger.debug(f"Body received: {request.json}")
+    
+    conn = connectDB()
+    logger.debug("connected db")
+    cur = conn.cursor()
+    logger.debug("cursor created")
+    data = getRequestData()
+    logger.debug(f"DELETE Request: {data}")
+    if not data or 'monitor_id' not in data:
+        logger.error("monitor_id is required")
+        return jsonify({"error": "monitor_id is required"}), 400
+    
+    try:
+        monitor_id = int(data['monitor_id'])
+    except (ValueError, TypeError):
+        return jsonify({"error": "monitor_id must be an integer"}), 400
+    #validate each of these fields
+    monitor_id = data['monitor_id']
+    try:
+        query = """
+                DELETE FROM monitors
+                WHERE monitor_id = %s
+                RETURNING monitor_id, name, url, interval, expected_response, last_checked
+                """
+        logger.debug("delete query formatted")       
+        cur.execute(query, (monitor_id,))
+        logger.debug("delete query executed")
+        conn.commit()
+        logger.debug("delete query committed")
+        result = cur.fetchone()
+        logger.debug("delete result fetched")
+
+        if result:
+            if request.form:
+                return redirect('/monitors')
+            cur.close()
+            return jsonify({
+                "success": True, 
+                "monitor_id": result[0], 
+                "name": result[1], 
+                "url": result[2], 
+                "interval": result[3], 
+                "expected_response": result[4],
+                "last_checked": str(result[5]) if result[5] else None,
+                "message": "Monitor deleted successfully"
+            }), 200
+        else:
+            cur.close()
+            return jsonify({"error": f"Monitor not found"}), 404
+    except Exception as e:
+            conn.rollback()  # Rollback on error
+            cur.close()
+            return jsonify({"DELETE error": str(e)}), 500
+
+
+
 #GET config or PUT/POST
 @app.route('/api/v1/config', methods=['POST', 'GET'])
-def config():
+def apiGetConfig():
     conn = connectDB()
     logger.debug("connected db")
     cur = conn.cursor()

@@ -1,0 +1,19 @@
+{% extends 'index.html' %}
+
+{% block content %}
+<table>
+    <tr>
+        <th>key name</th>
+        <th>key value</th>
+        <th>last modified</th>
+      </tr>
+    {% for key in config %}
+    <tr>
+        <td>{{ key[0] }}</td>
+        <td>{{ key[1] }}</td>
+        <td>{{ key[2] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
