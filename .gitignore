@@ -4,6 +4,7 @@ venv/
 .cursor/
 .DS_Store
 .env
+.env2
 workshop.sql
 workshop
 *-dump.sql

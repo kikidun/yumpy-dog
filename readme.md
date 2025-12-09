@@ -8,3 +8,8 @@ Todo (unordered):
 - Simple frontend (in progress)
 - API documentation
 
+Usage!
+
+1. Clone the repo
+2. run init.sh
+3. run docker-compose up
