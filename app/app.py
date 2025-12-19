@@ -388,11 +388,14 @@ def delMon():
 #GET config or PUT/POST
 @app.route('/api/v1/config', methods=['POST', 'GET'])
 def apiGetConfig():
+    
     conn = connectDB()
     logger.debug("connected db")
     cur = conn.cursor()
     logger.debug("cursor created")
     if request.method == 'GET':
+        data = getRequestData()
+        logger.debug(f"GET Request: {data}")
         query = "SELECT * FROM config"
         cur.execute(query)
         logger.debug("query executed")
@@ -400,7 +403,8 @@ def apiGetConfig():
         logger.debug("results fetched")
         cur.close()
     elif request.method == 'POST':
-        data = request.get_json()
+        data = getRequestData()
+        logger.debug(f"POST Request: {data}")
         if not data or 'key' not in data or 'value' not in data:
             logger.error("error: key and value are required")
             return jsonify({"error": "key and value are required"}), 400
@@ -419,6 +423,8 @@ def apiGetConfig():
                 logger.error(error_message)
                 return error_message, 404
             cur.close()
+            if request.form:
+                    return redirect('/config')
             return jsonify({"success": True, "key": key, "value": value}), 200
         except Exception as e:
             conn.rollback()  # Rollback on error
