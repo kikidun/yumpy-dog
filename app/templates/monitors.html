@@ -19,19 +19,19 @@
     </tr>
     {% endfor %}
 </table>
-<form label="addMon" action="/api/v1/monitors" method="post">
+<form id="addMonitor" action="/api/v1/monitors" method="post">
     <label for="name">Monitor Name:</label><br>
     <input type="text" id="name" name="name" placeholder="example"><br>
     <label for="url">Monitor URL:</label><br>
-    <input type="text" id="url" name="url"placeholder="http://example.com"><br>
+    <input type="text" id="url" name="url" placeholder="http://example.com"><br>
     <label for="interval">Monitor Interval:</label><br>
-    <input type="text" id="interval" name="interval"placeholder="30"><br>
+    <input type="text" id="interval" name="interval" placeholder="30"><br>
     <label for="expected_response">Expected Response:</label><br>
-    <input type="text" id="expected_response" name="expected_response"placeholder="200">
+    <input type="text" id="expected_response" name="expected_response" placeholder="200">
     <input type="submit">Add Monitor</input>
 </form>
 
-<form label="delMon" action="/api/v1/monitors/delMon" method="post">
+<form id="delMon" action="/api/v1/monitors/delMon" method="post">
     <label for="monitor_id">Monitor ID:</label><br>
     <input type="text" id="monitor_id" name="monitor_id"><br>
     <input type="submit">Delete Monitor</input>

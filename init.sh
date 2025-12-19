@@ -24,6 +24,3 @@ POSTGRES_DB=$database"
 printf "$appworker" > app/.env
 printf "$appworker" > worker/.env
 printf "$db" > database/.env
-
-
-

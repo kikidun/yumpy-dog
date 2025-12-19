@@ -33,7 +33,7 @@ logging_config = {
     },
     "loggers": {
         "root": {
-            "level": "INFO",
+            "level": "DEBUG",
             "handlers": [
                 "stdout"
             ]
@@ -108,9 +108,24 @@ def getMonitorsForChecking():
     conn.commit()
     cur = conn.cursor()
     cur.execute("SELECT * FROM monitors WHERE last_checked IS NULL OR (last_checked + (interval * INTERVAL '1 second') < CURRENT_TIMESTAMP)")
-    monitorsForChecking = cur.fetchall()
-    logger.debug("monitors for checking: "+ str(monitorsForChecking))
+    monitorsForCheckingRaw = cur.fetchall()
+    #logger.debug("monitors for checking raw: "+ str(monitorsForCheckingRaw))
     cur.close()
+    monitorsForChecking = []
+    if len(monitorsForCheckingRaw) != 0:
+        for monitor in monitorsForCheckingRaw:
+            data = {
+                'monitor_id': monitor[0],
+                'name': monitor[1],
+                'url': monitor[2],
+                'interval': monitor[3],
+                'created_at': monitor[4],
+                'last_status': monitor[5],
+                'last_checked': monitor[6]
+            }
+            monitorsForChecking.append(data)
+            logger.info(data["name"] + " flagged for checking")
+    #logger.debug("monitors for checking: "+ str(monitorsForChecking))
     return monitorsForChecking
 
 #HTTP get of a given URL, return response and timestamp
@@ -122,22 +137,24 @@ def checkURL(URL):
     except Exception as e:
         logger.error("Error checking URL")
         logger.error(f"Error: {e}")
-        return 0, send_timestamp
-    return resp, send_timestamp   
+        return {'status_code': 0, 'elapsed': "0:00:00.0"}, send_timestamp
+    #logger.debug("printing response: " + resp.text)
+    return {'status_code': resp.status_code, 'elapsed': resp.elapsed, 'response_content': resp.text}, send_timestamp   
 
 #put the result of the health check in the db, update last checked
 def update_DB(monitor, health_check_result, send_time):
     conn = connectDB()
     cur = conn.cursor()
-    logger.info("Loading the database with a "+ str(health_check_result) +" for "+ monitor[1])
+    logger.info("Loading the database with a "+ str(health_check_result["status_code"]) +" for "+ monitor["name"])
     try:
+        #logger.debug("query: INSERT INTO healthcheck_data ( " + str(send_time) + " , " + monitor["monitor_id"] + ", " + health_check_result["status_code"] + ", " + str(health_check_result["elapsed"]))
         cur.execute("INSERT INTO healthcheck_data ( healthcheck_timestamp, monitor_id, response, response_time) VALUES (%s, %s, %s, %s)",
-        (send_time, monitor[0], health_check_result.status_code, health_check_result.elapsed))
-        cur.execute("UPDATE monitors SET last_checked =%s WHERE monitor_id = %s",(send_time, monitor[0]))
+        (send_time, monitor["monitor_id"], health_check_result["status_code"], health_check_result["elapsed"]))
+        cur.execute("UPDATE monitors SET last_checked =%s WHERE monitor_id = %s",(send_time, monitor["monitor_id"]))
         conn.commit()
     except Exception as e:
         conn.rollback()  # Undo all changes in this transaction
-        logger.error("Commit failed!")
+        logger.error("Update DB Commit failed!")
         logger.error(f"Error: {e}")
     cur.close()
     return True
@@ -157,8 +174,9 @@ def working_logic():
                 time.sleep(1)
             else:
                 for monitor in monitors:
-                    health_check_result, send_time = checkURL(monitor[2])
-                    logger.debug("health check code was:" + str(health_check_result.status_code))
+
+                    health_check_result, send_time = checkURL(monitor["url"])
+                    logger.debug("health check data was:" + str(health_check_result["status_code"]))
                     update_DB(monitor, health_check_result, send_time) 
                 time.sleep(1)
         else:

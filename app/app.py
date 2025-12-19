@@ -32,7 +32,7 @@ logging_config = {
     },
     "loggers": {
         "root": {
-            "level": "DEBUG",
+            "level": "INFO",
             "handlers": [
                 "stdout"
             ]
@@ -177,6 +177,19 @@ def getMonitors():
         logger.debug("results fetched")
         cur.close()
 
+        result = []
+        for m in monitors:
+            result.append({
+                "monitor_id": m[0],
+                "name": m[1],
+                "url": m[2],
+                "interval": m[3],
+                "created_at": str(m[4]) if m[4] else None,
+                "expected_response": m[5],
+                "last_checked": str(m[6]) if m[6] else None
+            })
+        return jsonify(result), 200
+
     elif request.method == 'POST':
         data = getRequestData()
         logger.debug(f"POST Request: {data}")
@@ -309,7 +322,7 @@ def getMonitors():
             conn.rollback()  # Rollback on error
             cur.close()
             return jsonify({"DELETE error": str(e)}), 500
-    return result
+
 
 @app.route('/api/v1/monitors/delMon', methods=['POST'])
 def delMon():
@@ -328,13 +341,12 @@ def delMon():
     if not data or 'monitor_id' not in data:
         logger.error("monitor_id is required")
         return jsonify({"error": "monitor_id is required"}), 400
-    
+    monitor_id = None
     try:
         monitor_id = int(data['monitor_id'])
     except (ValueError, TypeError):
         return jsonify({"error": "monitor_id must be an integer"}), 400
     #validate each of these fields
-    monitor_id = data['monitor_id']
     try:
         query = """
                 DELETE FROM monitors
