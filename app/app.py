@@ -80,7 +80,7 @@ def connectDB():
                     exit()
     return _conn
 
-def getConfig():
+def fetchConfigFromDB():
     conn = connectDB()
     cur = conn.cursor()
     query = "SELECT * FROM config"
@@ -89,7 +89,7 @@ def getConfig():
     cur.close()
     return config
 
-def getMonitors():
+def fetchMonitorsFromDB():
     conn = connectDB()
     logger.debug("getMonitors connection opened")
     cur = conn.cursor()
@@ -137,16 +137,16 @@ def getStatus():
 
 @app.route('/monitors', methods=['GET'])
 def monitors():
-    monitors = getMonitors()
-    logger.debug("json monitors:")
-    logger.debug(jsonify(monitors))
+    monitors = fetchMonitorsFromDB()
+    #logger.debug("json monitors:")
+    #logger.debug(jsonify(monitors))
     logger.debug("monitors:")
     logger.debug(str(monitors))
     return render_template("monitors.html", monitors=monitors)
 
 @app.route('/config', methods=['GET'])
 def config():
-    config = getConfig()
+    config = fetchConfigFromDB()
     logger.debug("json config:")
     logger.debug(jsonify(config))
     logger.debug("config:")
@@ -173,7 +173,7 @@ def getMonitors():
         query = "SELECT * FROM monitors"
         cur.execute(query)
         logger.debug("query executed")
-        result = cur.fetchall()
+        monitors = cur.fetchall()
         logger.debug("results fetched")
         cur.close()
 
