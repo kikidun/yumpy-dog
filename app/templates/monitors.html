@@ -23,6 +23,7 @@
 {% endblock %}
 {% block input %}
 <form id="addMonitor" action="/api/v1/monitors" method="post">
+    <label type="title">Add Monitor</label>
     <label for="name">Monitor Name:</label><br>
     <input type="text" id="name" name="name" placeholder="example"><br>
     <label for="url">Monitor URL:</label><br>
@@ -31,12 +32,13 @@
     <input type="text" id="interval" name="interval" placeholder="30"><br>
     <label for="expected_response">Expected Response:</label><br>
     <input type="text" id="expected_response" name="expected_response" placeholder="200">
-    <input type="submit">Add Monitor</input>
+    <input type="submit"></input>
 </form>
 
 <form id="delMon" action="/api/v1/monitors/delMon" method="post">
+    <label type="title">Delete Monitor</label>
     <label for="monitor_id">Monitor ID:</label><br>
     <input type="text" id="monitor_id" name="monitor_id"><br>
-    <input type="submit">Delete Monitor</input>
+    <input type="submit"></input>
 </form>
 {% endblock %}

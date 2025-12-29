@@ -19,10 +19,11 @@
 {% endblock %}
 {% block input %}
 <form id="addConfig" action="/api/v1/config" method="post">
+    <label type="title">Update Config Value</label>
     <label for="key">Key Name:</label><br>
     <input type="text" id="key" name="key" placeholder="worker_enabled"><br>
     <label for="value">Key Value:</label><br>
     <input type="text" id="value" name="value" placeholder="True"><br>
-    <input type="submit">Update Config Value</input>
+    <input type="submit"></input>
 </form>
 {% endblock %}
