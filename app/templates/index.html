@@ -2,113 +2,14 @@
 <html>
 <head>
     <title>YumpURL</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <h2>Welcome to Yump</h2>
     <a href="{{ url_for('monitors') }}">Monitors</a>
     <a href="{{ url_for('config') }}">Config</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
     {% block content %} {% endblock %}
     {% block input %} {% endblock %}
 </body>
 </html>
-<style>
-    body {
-        font-family: system-ui, -apple-system, sans-serif;
-        max-width: 1200px;
-        margin: 40px auto;
-        padding: 20px;
-        background: #f5f5f5;
-    }
-
-    h2 {
-        color: #333;
-        margin-bottom: 20px;
-    }
-
-    nav {
-        margin-bottom: 30px;
-    }
-
-    nav a {
-        color: #0066cc;
-        text-decoration: none;
-        margin-right: 15px;
-        padding: 8px 12px;
-        background: white;
-        border-radius: 4px;
-    }
-
-    nav a:hover {
-        background: #e6f2ff;
-    }
-
-    table {
-        width: 100%;
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-bottom: 30px;
-    }
-
-    th {
-        background: #333;
-        color: white;
-        padding: 12px;
-        text-align: left;
-    }
-
-    td {
-        padding: 12px;
-        border-bottom: 1px solid #eee;
-    }
-
-    tr:hover {
-        background: #f9f9f9;
-    }
-
-    form {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-   
-
-    label {
-        display: block;
-        margin-bottom: 3px;
-        font-weight: 500;
-    }
-    label[type="title"] {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 700;
-    }
-    input[type="text"],
-    input[type="number"],
-    input[type="url"] {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 15px;
-    }
-
-    input[type="submit"],
-    button {
-        background: #0066cc;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    input[type="submit"]:hover,
-    button:hover {
-        background: #0052a3;
-    }
-</style>

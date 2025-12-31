@@ -5,8 +5,12 @@ Todo (unordered):
 - DB migration to add a last modified column to tables
 - Break monitor route into get, update, add and delete funtions
 - Test suite for API
-- Simple frontend (in progress)
+- Determine what to do with a deleted monitors data
 - API documentation
+- data page
+- data page search
+- data page data
+
 
 Usage!
 

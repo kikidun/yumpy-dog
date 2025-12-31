@@ -1,0 +1,29 @@
+{% extends 'index.html' %}
+
+
+{% block content %}
+ <label for="monitor">Select Monitor:</label>
+<select name="monitor_id" id="monitor">
+    <option value="">-- Choose --</option>
+    {% for monitor in monitors %}
+        <option value="{{ monitor.id }}">{{ monitor.name }}</option>
+    {% endfor %}
+</select>
+<!-- <table>
+    <tr>
+        <th>id</th>
+        <th>timestamp</th>
+        <th>monitor_id</th>
+        <th>response</th>
+        <th>response_time</th>
+      </tr>
+    {% for record in records %}
+    <tr>
+        {% for field in record%}
+        <td>{{ field }}</td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table> -->
+
+{% endblock %}

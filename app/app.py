@@ -1,13 +1,16 @@
 import datetime
-from flask import Flask, jsonify, request, render_template, redirect
+from flask import Flask, jsonify, request, render_template, redirect, url_for
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import psycopg2
 import os
 import time
 from datetime import datetime
 from dotenv import load_dotenv
 import logging.config
-import pathlib
 import json 
+
+app = Flask(__name__)
+app.secret_key = 'sillydogsallday123'
 
 logger = logging.getLogger("app")
 
@@ -32,7 +35,7 @@ logging_config = {
     },
     "loggers": {
         "root": {
-            "level": "INFO",
+            "level": "DEBUG",
             "handlers": [
                 "stdout"
             ]
@@ -51,7 +54,19 @@ load_dotenv()
 
 
 app = Flask(__name__)
+app.secret_key = 'sillydogsallday123'
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
+#Mixin gives my User class the required methods for Flask-login
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
 #######################################################
 #Helper functions
 #######################################################
@@ -127,15 +142,49 @@ def getRequestData():
 #######################################################
 #Web Routes
 #######################################################
+#@app.route('/')
+#def hello():
+#    return render_template("index.html")
 @app.route('/')
-def hello():
-    return render_template("index.html")
+@login_required
+def home():
+    return render_template('index.html')
 
 @app.route('/status')
 def getStatus():
     return True
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        #I will do authentication eventually
+        logger.debug(f"Route hit with URL: {request.url}")
+        logger.debug(f"Request method: {request.method}")
+        logger.debug(f"Request: {str(request.form)}")
+        #query the db for that username
+        #if the password matches, log them in
+        if request.form["username"] == "stinky" and request.form["password"] == "dogs":
+            user = User(1)
+            login_user(user)
+            return redirect(url_for('home'))
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    # Check if it's an API request
+    if request.path.startswith('/api/'):
+        return jsonify({"error": "Authentication required"}), 401
+    # Otherwise redirect to login page (for web routes)
+    return redirect(url_for('login'))
+
 @app.route('/monitors', methods=['GET'])
+@login_required
 def monitors():
     monitors = fetchMonitorsFromDB()
     #logger.debug("json monitors:")
@@ -145,6 +194,7 @@ def monitors():
     return render_template("monitors.html", monitors=monitors)
 
 @app.route('/config', methods=['GET'])
+@login_required
 def config():
     config = fetchConfigFromDB()
     logger.debug("json config:")
@@ -153,11 +203,21 @@ def config():
     logger.debug(str(config))
     return render_template("config.html", config=config)
 
+@app.route('/data', methods=['GET'])
+@login_required
+def getDataRoute():
+    records = getData()
+    #logger.debug("json monitors:")
+    #logger.debug(jsonify(monitors))
+    logger.debug("monitors:")
+    logger.debug(str(monitors))
+    return render_template("monitors.html", records=records)
 
 #######################################################
 #API Routes
 #######################################################
 @app.route('/api/v1/monitors', methods=['POST', 'GET', 'PUT', 'DELETE'])
+@login_required
 def getMonitors():
     logger.debug(f"Route hit with URL: {request.url}")
     logger.debug(f"Request method: {request.method}")
@@ -325,6 +385,7 @@ def getMonitors():
 
 
 @app.route('/api/v1/monitors/delMon', methods=['POST'])
+@login_required
 def delMon():
     logger.debug(f"delMon Route hit with URL: {request.url}")
     logger.debug(f"delMon Request method: {request.method}")
@@ -387,6 +448,7 @@ def delMon():
 
 #GET config or PUT/POST
 @app.route('/api/v1/config', methods=['POST', 'GET'])
+@login_required
 def apiGetConfig():
     
     conn = connectDB()
@@ -435,6 +497,7 @@ def apiGetConfig():
 #TODO
 #Multiple Monitors, timeframe, sanitizing variables
 @app.route('/api/v1/data')
+@login_required
 def getData():
     data = request.get_json()
     if not data or 'monitor' not in data or 'number' not in data:
