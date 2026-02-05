@@ -14,8 +14,8 @@ env:
   ECS_CLUSTER: lovable-cat-duu7xu
   ECS_WORKER_SERVICE: yumpy-worker-service-9a9d07j2
   ECS_APP_SERVICE: yumpy-application-service-05gssb9v
-  ECS_WORKER_TASK_DEFINITION:
-  ECS_APP_TASK_DEFINITION:
+  ECS_WORKER_TASK_DEFINITION: yumpy-worker
+  ECS_APP_TASK_DEFINITION: yumpy-application
 
 jobs:
   build-and-push:
