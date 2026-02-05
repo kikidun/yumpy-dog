@@ -1,4 +1,3 @@
-# .github/workflows/build-and-push.yml
 name: Build and Push Docker Images
 
 on:
@@ -6,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-2
@@ -23,7 +22,7 @@ jobs:
     
     permissions:
       contents: read
-      id-token: write  # Required for OIDC authentication
+      id-token: write
     
     steps:
     - name: Checkout code
@@ -71,7 +70,7 @@ jobs:
       with:
           task-definition: ${{ env.ECS_APP_TASK_DEFINITION }}
           container-name: yumpy-application
-          image: ${{ steps.build-app-image.outputs.image }}
+          image: ${{ env.ECR_REGISTRY }}/yumpy-dog-app:${{ github.sha }}
           
     - name: Fill in the new worker image ID in the Amazon ECS task definition
       id: worker-task-def
@@ -79,7 +78,7 @@ jobs:
       with:
           task-definition: ${{ env.ECS_WORKER_TASK_DEFINITION }}
           container-name: yumpy-worker
-          image: ${{ steps.build-worker-image.outputs.image }}
+          image: ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:${{ github.sha }}
 
     - name: Deploy App Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
@@ -95,4 +94,4 @@ jobs:
           task-definition: ${{ steps.worker-task-def.outputs.task-definition }}
           service: ${{ env.ECS_WORKER_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          wait-for-service-stability: false
