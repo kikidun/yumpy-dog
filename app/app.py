@@ -13,6 +13,8 @@ app = Flask(__name__)
 app.secret_key = 'sillydogsallday123'
 
 logger = logging.getLogger("app")
+load_dotenv()
+log_level = os.getenv("LOG_LEVEL")
 
 logging_config = {
     "version": 1,
@@ -35,7 +37,7 @@ logging_config = {
     },
     "loggers": {
         "root": {
-            "level": "DEBUG",
+            "level": log_level,
             "handlers": [
                 "stdout"
             ]
@@ -50,7 +52,7 @@ def configLogging():
     logging.config.dictConfig(logging_config)
 
 
-load_dotenv()
+
 
 
 app = Flask(__name__)

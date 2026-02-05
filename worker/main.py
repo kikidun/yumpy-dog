@@ -7,9 +7,9 @@ warnings.filterwarnings("ignore")
 
 import os
 from dotenv import load_dotenv
-
+load_dotenv()
 import logging.config
-
+log_level = os.getenv("LOG_LEVEL")
 logger = logging.getLogger("worker")
 
 logging_config = {
@@ -33,7 +33,7 @@ logging_config = {
     },
     "loggers": {
         "root": {
-            "level": "DEBUG",
+            "level": log_level,
             "handlers": [
                 "stdout"
             ]

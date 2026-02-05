@@ -1,0 +1,68 @@
+{
+    "family": "yumpy-worker",
+    "containerDefinitions": [
+        {
+            "name": "yump-worker",
+            "image": "563748380420.dkr.ecr.us-east-2.amazonaws.com/yumpy-dog-worker@sha256:ae151deac9e5f4e43cc55d52180ebf6cdbafa0192aa2b5427e73818531257735",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "yump-worker-80-tcp",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "PG_DATABASE",
+                    "value": "postgres"
+                },
+                {
+                    "name": "PG_USER",
+                    "value": "postgres"
+                },
+                {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:563748380420:secret:yump-db-creds-vsLSsG"
+                },
+                {
+                    "name": "PG_HOST",
+                    "value": "database-1.c9s2wke08ucs.us-east-2.rds.amazonaws.com"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/yump-worker",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "us-east-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::563748380420:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::563748380420:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "2048",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "enableFaultInjection": false
+}

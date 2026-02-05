@@ -13,7 +13,6 @@ services:
 
   worker:
     build: ./worker
-    image: yumpy-dog 
     depends_on: [db]  
     container_name: yump_worker
     restart: unless-stopped
