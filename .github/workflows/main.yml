@@ -45,8 +45,6 @@ jobs:
         file: ./app/Dockerfile
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
-          yump-app:latest
-          yump-app:${{ github.sha }}
           ${{ env.ECR_REGISTRY }}/yumpy-dog-app:latest
           ${{ env.ECR_REGISTRY }}/yumpy-dog-app:${{ github.sha }}
     
@@ -57,7 +55,5 @@ jobs:
         file: ./worker/Dockerfile
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
-          yump-worker:latest
-          yump-worker:${{ github.sha }}
           ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:latest
           ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:${{ github.sha }}
