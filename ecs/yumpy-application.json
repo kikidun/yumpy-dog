@@ -52,7 +52,7 @@
             "systemControls": []
         }
     ],
-    "executionRoleArn": "arn:aws:iam::563748380420:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::563748380420:role/yump-ecs-role",
     "networkMode": "awsvpc",
     "volumes": [],
     "placementConstraints": [],
