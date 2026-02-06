@@ -1,0 +1,97 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: 563748380420.dkr.ecr.us-east-2.amazonaws.com
+  ECS_CLUSTER: lovable-cat-duu7xu
+  ECS_WORKER_SERVICE: yumpy-worker-service-9a9d07j2
+  ECS_APP_SERVICE: yumpy-application-service-05gssb9v
+  ECS_WORKER_TASK_DEFINITION: yumpy-worker
+  ECS_APP_TASK_DEFINITION: yumpy-application
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build and push app image
+      id: build-app-image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./app
+        file: ./app/Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          ${{ env.ECR_REGISTRY }}/yumpy-dog-app:latest
+          ${{ env.ECR_REGISTRY }}/yumpy-dog-app:${{ github.sha }}
+    
+    - name: Build and push worker image
+      id: build-worker-image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./worker
+        file: ./worker/Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:latest
+          ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:${{ github.sha }}
+
+    - name: Fill in the new app image ID in the Amazon ECS task definition
+      id: app-task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
+      with:
+          task-definition: ${{ env.ECS_APP_TASK_DEFINITION }}
+          container-name: yumpy-application
+          image: ${{ env.ECR_REGISTRY }}/yumpy-dog-app:${{ github.sha }}
+          
+    - name: Fill in the new worker image ID in the Amazon ECS task definition
+      id: worker-task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
+      with:
+          task-definition: ${{ env.ECS_WORKER_TASK_DEFINITION }}
+          container-name: yumpy-worker
+          image: ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:${{ github.sha }}
+
+    - name: Deploy App Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+      with:
+          task-definition: ${{ steps.app-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_APP_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: false
+          
+    - name: Deploy Worker Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+      with:
+          task-definition: ${{ steps.worker-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_WORKER_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: false

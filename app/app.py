@@ -74,6 +74,7 @@ def load_user(user_id):
 #######################################################
 _conn = None
 def connectDB():
+    """Create global connection object with exponential backoff."""
     global _conn
     if _conn is None or _conn.closed:
         max_retries = 5
@@ -98,6 +99,7 @@ def connectDB():
     return _conn
 
 def fetchConfigFromDB():
+    """Return unprocessed config table"""
     conn = connectDB()
     cur = conn.cursor()
     query = "SELECT * FROM config"
@@ -232,6 +234,7 @@ def getMonitors():
     cur = conn.cursor()
     logger.debug("cursor created")
     if request.method == 'GET':
+        """retrieve monitors table and convert it into a dictionary"""
         query = "SELECT * FROM monitors"
         cur.execute(query)
         logger.debug("query executed")
@@ -253,6 +256,12 @@ def getMonitors():
         return jsonify(result), 200
 
     elif request.method == 'POST':
+        """Create a new monitor
+
+            Requires: name, url, interval and expected response
+
+            Returns a monitor_id.
+        """
         data = getRequestData()
         logger.debug(f"POST Request: {data}")
         if not data or 'name' not in data or 'url' not in data or 'interval' not in data or 'expected_response' not in data:
@@ -291,6 +300,12 @@ def getMonitors():
             return jsonify({"POST error": str(e)}), 500
 
     elif request.method == 'PUT':
+        """Updates an existing monitor
+
+            Requires: monitor_id, name, url, interval and expected response
+
+            Returns success, monitor_id, name, url, interval, expected_response, last_checked, a message and the status
+        """
         data = getRequestData()
         logger.debug(f"PUT Request: {data}")
         if not data or 'name' not in data or 'url' not in data or 'interval' not in data or 'expected_response' not in data or 'monitor_id' not in data:
@@ -341,6 +356,11 @@ def getMonitors():
             return jsonify({"PUT error": str(e)}), 500
     #i
     elif request.method == 'DELETE':
+        """Deletes an existing monitor
+
+            Requires: monitor_id
+            Returns success, monitor_id, name, url, interval, expected_response, last_checked, a message and the status
+        """
         data = getRequestData()
         logger.debug(f"DELETE Request: {data}")
         if not data or 'monitor_id' not in data:
@@ -467,6 +487,11 @@ def apiGetConfig():
         logger.debug("results fetched")
         cur.close()
     elif request.method == 'POST':
+        """Updates an existing config value
+
+            Requires: key and value
+            Returns success, key, value
+        """
         data = getRequestData()
         logger.debug(f"POST Request: {data}")
         if not data or 'key' not in data or 'value' not in data:
