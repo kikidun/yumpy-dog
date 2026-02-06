@@ -85,6 +85,11 @@ jobs:
           container-name: yumpy-worker
           image: ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:${{ github.sha }}
 
+    - name: Create CloudWatch log groups if they don't exist
+      run: |
+        aws logs create-log-group --log-group-name /ecs/yump-app --region ${{ env.AWS_REGION }} || true
+        aws logs create-log-group --log-group-name /ecs/yump-worker --region ${{ env.AWS_REGION }} || true
+
     - name: Deploy App Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
