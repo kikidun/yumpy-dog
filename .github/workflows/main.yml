@@ -68,7 +68,7 @@ jobs:
       id: app-task-def
       uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
       with:
-          task-definition: ${{ env.ECS_APP_TASK_DEFINITION }}
+          task-definition: ecs/yumpy-application.json
           container-name: yumpy-application
           image: ${{ env.ECR_REGISTRY }}/yumpy-dog-app:${{ github.sha }}
           
@@ -76,7 +76,7 @@ jobs:
       id: worker-task-def
       uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
       with:
-          task-definition: ${{ env.ECS_WORKER_TASK_DEFINITION }}
+          task-definition: ecs/yumpy-worker.json
           container-name: yumpy-worker
           image: ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:${{ github.sha }}
 
@@ -94,4 +94,4 @@ jobs:
           task-definition: ${{ steps.worker-task-def.outputs.task-definition }}
           service: ${{ env.ECS_WORKER_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: false
+          wait-for-service-stability: true
