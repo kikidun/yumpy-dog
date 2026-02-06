@@ -159,7 +159,7 @@ def home():
 
 @app.route('/status')
 def getStatus():
-    return True
+    return jsonify({"status": "healthy"}), 200
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
