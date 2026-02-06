@@ -85,8 +85,9 @@ def connectDB():
                     dbname=os.getenv("PG_DATABASE", "yump_db"),
                     user=os.getenv("PG_USER", "yumpy"),
                     password=os.getenv("DB_PASSWORD"),
-                    sslmode='verify-ca',
-                    sslrootcert='/app/rds-ca-2019-root.pem'
+                    sslmode='require'
+                    #sslmode='verify-ca',
+                    #sslrootcert='/app/rds-ca-2019-root.pem'
                 )
                 logger.info("Connected!")
                 return _conn

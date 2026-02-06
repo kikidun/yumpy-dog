@@ -11,6 +11,6 @@ WORKDIR /worker
 COPY ./ ./worker/
 
 # Download RDS CA bundle
-RUN python3 -c "import urllib.request; urllib.request.urlretrieve('https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem', '/app/rds-ca-2019-root.pem')"
+#RUN python3 -c "import urllib.request; urllib.request.urlretrieve('https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem', '/app/rds-ca-2019-root.pem')"
 ENV PATH=/root/.local/bin:$PATH
 CMD ["python3", "-u", "worker/main.py"]
