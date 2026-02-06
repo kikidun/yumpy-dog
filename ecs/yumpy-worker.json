@@ -25,12 +25,14 @@
                     "value": "postgres"
                 },
                 {
-                    "name": "DB_PASSWORD",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-2:563748380420:secret:yump-db-creds-vsLSsG"
-                },
-                {
                     "name": "PG_HOST",
                     "value": "database-1.c9s2wke08ucs.us-east-2.rds.amazonaws.com"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "DB_PASSWORD",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:563748380420:secret:yump-db-creds-vsLSsG"
                 }
             ],
             "environmentFiles": [],
@@ -62,6 +64,5 @@
     "runtimePlatform": {
         "cpuArchitecture": "X86_64",
         "operatingSystemFamily": "LINUX"
-    },
-    "enableFaultInjection": false
+    }
 }
