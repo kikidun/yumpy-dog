@@ -2,7 +2,7 @@
     "family": "yumpy-worker",
     "containerDefinitions": [
         {
-            "name": "yump-worker",
+            "name": "yumpy-worker",
             "image": "563748380420.dkr.ecr.us-east-2.amazonaws.com/yumpy-dog-worker@sha256:ae151deac9e5f4e43cc55d52180ebf6cdbafa0192aa2b5427e73818531257735",
             "cpu": 0,
             "portMappings": [
@@ -41,7 +41,6 @@
                 "logDriver": "awslogs",
                 "options": {
                     "awslogs-group": "/ecs/yump-worker",
-                    "awslogs-create-group": "true",
                     "awslogs-region": "us-east-2",
                     "awslogs-stream-prefix": "ecs"
                 },

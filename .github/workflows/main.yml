@@ -1,3 +1,4 @@
+# .github/workflows/main.yml
 name: Build and Push Docker Images
 
 on:
@@ -13,8 +14,6 @@ env:
   ECS_CLUSTER: lovable-cat-duu7xu
   ECS_WORKER_SERVICE: yumpy-worker-service-9a9d07j2
   ECS_APP_SERVICE: yumpy-application-service-05gssb9v
-  ECS_WORKER_TASK_DEFINITION: ecs/yumpy-worker.json
-  ECS_APP_TASK_DEFINITION: ecs/yumpy-application.json
 
 jobs:
   build-and-push:
@@ -27,6 +26,12 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Verify task definition files exist
+      run: |
+        ls -la ecs/
+        cat ecs/yumpy-application.json | jq '.containerDefinitions[].name'
+        cat ecs/yumpy-worker.json | jq '.containerDefinitions[].name'
     
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -66,7 +71,7 @@ jobs:
 
     - name: Fill in the new app image ID in the Amazon ECS task definition
       id: app-task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
           task-definition: ecs/yumpy-application.json
           container-name: yumpy-application
@@ -74,14 +79,14 @@ jobs:
           
     - name: Fill in the new worker image ID in the Amazon ECS task definition
       id: worker-task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
           task-definition: ecs/yumpy-worker.json
           container-name: yumpy-worker
           image: ${{ env.ECR_REGISTRY }}/yumpy-dog-worker:${{ github.sha }}
 
     - name: Deploy App Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
           task-definition: ${{ steps.app-task-def.outputs.task-definition }}
           service: ${{ env.ECS_APP_SERVICE }}
@@ -89,7 +94,7 @@ jobs:
           wait-for-service-stability: false
           
     - name: Deploy Worker Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
           task-definition: ${{ steps.worker-task-def.outputs.task-definition }}
           service: ${{ env.ECS_WORKER_SERVICE }}

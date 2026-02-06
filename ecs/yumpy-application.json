@@ -2,7 +2,7 @@
     "family": "yumpy-application",
     "containerDefinitions": [
         {
-            "name": "yump-webapp",
+            "name": "yumpy-application",
             "image": "563748380420.dkr.ecr.us-east-2.amazonaws.com/yumpy-dog-app:8c71952217c2b68982be96a65753a6c0eec5737a",
             "cpu": 0,
             "memory": 2048,
